@@ -156,6 +156,24 @@ $metaData = [
 @file_put_contents($metaFile, json_encode($metaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
 $stats = get_storage_stats($uniqueId);
+
+// Persist bucket and files into MySQL database if connected
+$bucketId = db_create_or_update_bucket($uniqueId, $stats['files'], $stats['size'], $metaData['note']);
+if ($bucketId) {
+    foreach ($uploadedFiles as $uFile) {
+        $ext = strtolower(pathinfo($uFile['name'], PATHINFO_EXTENSION));
+        $fullUploadedPath = $targetDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $uFile['path']);
+        db_save_file($bucketId, $uniqueId, [
+            'name' => $uFile['name'],
+            'path' => $uFile['path'],
+            'size' => $uFile['size'],
+            'file_type' => get_safe_mime_type($fullUploadedPath),
+            'extension' => $ext,
+            'category' => get_file_category($ext)
+        ]);
+    }
+}
+
 $baseUrl = rtrim(get_config('app', 'base_url', ''), '/');
 $browseUrl = $baseUrl . '/browse.php?id=' . urlencode($uniqueId);
 

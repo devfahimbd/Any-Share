@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/db.php';
 
 /**
  * Validates and sanitizes a Secret / Unique ID
@@ -335,6 +336,27 @@ function get_browser_items($id, $subPath = '') {
         $meta = json_decode($metaContent, true) ?? [];
     }
 
+    // Merge database metrics if MySQL is connected
+    $dbBucket = db_find_bucket($id);
+    if ($dbBucket) {
+        $meta['views_count'] = (int) ($dbBucket['views_count'] ?? 0);
+        $meta['downloads_count'] = (int) ($dbBucket['downloads_count'] ?? 0);
+        $meta['title'] = $dbBucket['title'] ?? ($meta['title'] ?? '');
+        $meta['note'] = $dbBucket['note'] ?? ($meta['note'] ?? '');
+
+        // Fetch download counts for current directory files
+        $db = get_db();
+        if ($db) {
+            $stmt = $db->prepare("SELECT `relative_path`, `download_count` FROM `files` WHERE `secret_id` = ?");
+            $stmt->execute([$id]);
+            $counts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+            foreach ($files as &$file) {
+                $file['download_count'] = (int) ($counts[$file['path']] ?? 0);
+            }
+            unset($file);
+        }
+    }
+
     return [
         'success' => true,
         'id' => $id,
@@ -346,6 +368,8 @@ function get_browser_items($id, $subPath = '') {
         'file_count' => $fileCount,
         'total_size' => $totalBytes,
         'total_size_formatted' => format_bytes($totalBytes),
+        'views_count' => $meta['views_count'] ?? 0,
+        'downloads_count' => $meta['downloads_count'] ?? 0,
         'meta' => $meta
     ];
 }

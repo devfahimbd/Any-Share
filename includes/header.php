@@ -46,7 +46,12 @@ $baseUrl = rtrim(get_config('app', 'base_url', ''), '/');
                 </div>
                 <div class="brand-text">
                     <span class="brand-title">Any<span class="accent">Share</span></span>
-                    <span class="brand-badge">S3 Storage Explorer</span>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <span class="brand-badge">S3 Explorer</span>
+                        <?php if (db_is_connected()): ?>
+                            <span class="db-status-badge" title="MySQL Connected (XAMPP / cPanel)">🟢 MySQL</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </a>
 

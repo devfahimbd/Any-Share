@@ -71,8 +71,12 @@ $zipDownloadUrl = "{$baseUrl}/api/download.php?id=" . urlencode($uniqueId) . ($c
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 </button>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-dim);">
+            <div style="font-size: 0.825rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                 <span>Total: <strong><?= $totalStats['files'] ?></strong> files (<?= $totalStats['size_formatted'] ?>)</span>
+                <?php if (isset($browserData['views_count'])): ?>
+                <span>• 👁️ <strong><?= (int)$browserData['views_count'] ?></strong> views</span>
+                <span>• 📥 <strong><?= (int)$browserData['downloads_count'] ?></strong> downloads</span>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -209,6 +213,9 @@ $zipDownloadUrl = "{$baseUrl}/api/download.php?id=" . urlencode($uniqueId) . ($c
                                 <div class="s3-row-name">
                                     <span class="s3-item-icon"><?= $icon ?></span>
                                     <span class="s3-link-name"><?= htmlspecialchars($file['name']) ?></span>
+                                    <?php if (!empty($file['download_count'])): ?>
+                                        <span style="font-size: 0.72rem; color: var(--emerald); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.4rem;" title="<?= (int)$file['download_count'] ?> downloads">⬇️ <?= (int)$file['download_count'] ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                             <td style="font-family: var(--font-mono); font-size: 0.825rem;"><?= $file['size_formatted'] ?></td>
@@ -271,7 +278,10 @@ $zipDownloadUrl = "{$baseUrl}/api/download.php?id=" . urlencode($uniqueId) . ($c
                 <div class="grid-card" data-preview-item='<?= $fileJson ?>' data-unique-id="<?= htmlspecialchars($uniqueId) ?>" style="cursor: pointer;">
                     <div class="grid-icon"><?= $icon ?></div>
                     <div class="grid-title" title="<?= htmlspecialchars($file['name']) ?>"><?= htmlspecialchars($file['name']) ?></div>
-                    <div class="grid-meta"><?= $file['size_formatted'] ?> • <?= strtoupper($file['extension'] ?: 'FILE') ?></div>
+                    <div class="grid-meta">
+                        <?= $file['size_formatted'] ?> • <?= strtoupper($file['extension'] ?: 'FILE') ?>
+                        <?= !empty($file['download_count']) ? ' • ⬇️ ' . (int)$file['download_count'] : '' ?>
+                    </div>
                 </div>
                 <?php endforeach; ?>
             </div>

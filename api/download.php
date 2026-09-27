@@ -43,6 +43,9 @@ if ($isZipDownload || ($targetPath && is_dir($targetPath))) {
         die('Failed to generate ZIP archive.');
     }
 
+    // Record download count in database
+    db_increment_downloads($uniqueId);
+
     // Clean output buffers
     while (ob_get_level()) {
         ob_end_clean();
@@ -69,6 +72,9 @@ if (!$targetPath || !is_file($targetPath)) {
 $fileName = basename($targetPath);
 $fileSize = filesize($targetPath);
 $mimeType = get_safe_mime_type($targetPath);
+
+// Record download in database
+db_increment_downloads($uniqueId, $relPath);
 
 // Clear output buffers
 while (ob_get_level()) {

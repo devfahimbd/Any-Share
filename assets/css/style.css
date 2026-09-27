@@ -183,6 +183,19 @@ body {
     letter-spacing: 0.08em;
 }
 
+.db-status-badge {
+    font-size: 0.65rem;
+    color: var(--emerald);
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+}
+
 .nav-links {
     display: flex;
     align-items: center;

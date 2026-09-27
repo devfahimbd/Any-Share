@@ -26,6 +26,9 @@ if (!$idDir) {
     ], 404);
 }
 
+// Record search / view metric in database
+db_increment_views($uniqueId);
+
 // Fetch stats and top-level listing
 $stats = get_storage_stats($uniqueId);
 $items = get_browser_items($uniqueId, '');
@@ -38,6 +41,8 @@ json_response([
     'id' => $uniqueId,
     'browse_url' => $browseUrl,
     'stats' => $stats,
+    'views_count' => $items['views_count'] ?? 0,
+    'downloads_count' => $items['downloads_count'] ?? 0,
     'folder_count' => $items['folder_count'] ?? 0,
     'file_count' => $items['file_count'] ?? 0,
     'total_size_formatted' => $stats['size_formatted'] ?? '0 B',
