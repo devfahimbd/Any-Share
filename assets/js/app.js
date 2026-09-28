@@ -148,70 +148,142 @@
             copyToClipboard(fileUrl, 'Direct preview link copied!');
         };
 
+        // Helper to safely escape HTML
+        function escapeHtml(text) {
+            if (typeof text !== 'string') text = String(text ?? '');
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        const isTextDoc = category === 'code' || [
+            'txt', 'md', 'json', 'log', 'csv', 'tsv', 'xml', 'ini', 'sql',
+            'sh', 'bat', 'conf', 'yml', 'yaml', 'env', 'htaccess', 'svg',
+            'toml', 'dockerfile', 'c', 'cpp', 'py', 'java', 'js', 'css', 'html', 'php'
+        ].includes(ext);
+
         // Render preview according to file type
         if (category === 'image') {
+            const wrap = document.createElement('div');
+            wrap.className = 'modal-media-wrap';
             const img = new Image();
             img.className = 'modal-preview-img';
             img.alt = fileName;
             img.onload = () => {
                 loader.style.display = 'none';
-                container.appendChild(img);
+                wrap.appendChild(img);
+                container.appendChild(wrap);
             };
             img.onerror = () => {
                 loader.style.display = 'none';
-                container.innerHTML = '<div class="text-dim">Unable to preview image.</div>';
+                container.innerHTML = '<div class="preview-fallback-box"><div style="font-size:2.5rem;margin-bottom:0.75rem;">🖼️</div><p class="text-dim">Unable to preview image file.</p></div>';
             };
             img.src = fileUrl;
         } else if (category === 'video') {
             loader.style.display = 'none';
+            const wrap = document.createElement('div');
+            wrap.className = 'modal-media-wrap';
             const video = document.createElement('video');
             video.className = 'modal-preview-video';
             video.controls = true;
             video.autoplay = false;
             video.src = fileUrl;
-            container.appendChild(video);
+            wrap.appendChild(video);
+            container.appendChild(wrap);
         } else if (category === 'audio') {
             loader.style.display = 'none';
-            const audio = document.createElement('audio');
-            audio.className = 'modal-preview-audio';
-            audio.controls = true;
-            audio.autoplay = false;
-            audio.src = fileUrl;
-            container.appendChild(audio);
+            const wrap = document.createElement('div');
+            wrap.className = 'modal-audio-wrap';
+            wrap.innerHTML = `
+                <div class="audio-player-card">
+                    <div class="audio-art">🎵</div>
+                    <div class="audio-info">
+                        <div class="audio-name">${escapeHtml(fileName)}</div>
+                        <div class="audio-meta">${escapeHtml(item.size_formatted || '')} • Audio Player</div>
+                    </div>
+                    <audio controls class="modal-preview-audio" src="${fileUrl}"></audio>
+                </div>
+            `;
+            container.appendChild(wrap);
         } else if (ext === 'pdf') {
             loader.style.display = 'none';
             const iframe = document.createElement('iframe');
             iframe.className = 'modal-preview-iframe';
             iframe.src = fileUrl;
             container.appendChild(iframe);
-        } else if (category === 'code' || ['txt', 'md', 'json', 'log', 'csv', 'xml'].includes(ext)) {
+        } else if (isTextDoc) {
             fetch(`${fileUrl}&raw=1`)
                 .then(r => r.json())
                 .then(res => {
                     loader.style.display = 'none';
                     if (res.success) {
-                        const pre = document.createElement('pre');
-                        pre.className = 'modal-preview-code';
-                        const code = document.createElement('code');
-                        code.textContent = res.content;
-                        pre.appendChild(code);
-                        container.appendChild(pre);
+                        const rawText = res.content || '';
+                        const lines = rawText.split('\n');
+                        const lineCount = lines.length;
+                        const charCount = rawText.length;
+                        const displayExt = (res.extension || ext || 'TXT').toUpperCase();
+
+                        // Build line table
+                        const rowsHtml = lines.map((line, idx) => {
+                            return `<div class="code-line-row"><span class="code-line-num">${idx + 1}</span><span class="code-line-text">${escapeHtml(line) || '&nbsp;'}</span></div>`;
+                        }).join('');
+
+                        const viewerBox = document.createElement('div');
+                        viewerBox.className = 'code-viewer-container';
+                        viewerBox.innerHTML = `
+                            <div class="code-viewer-toolbar">
+                                <div class="code-viewer-info">
+                                    <span class="code-badge">${escapeHtml(displayExt)}</span>
+                                    <span class="code-stat">${lineCount} ${lineCount === 1 ? 'line' : 'lines'}</span>
+                                    <span class="code-dot">•</span>
+                                    <span class="code-stat">${charCount} characters</span>
+                                    <span class="code-dot">•</span>
+                                    <span class="code-stat">${escapeHtml(res.size_formatted || '')}</span>
+                                </div>
+                                <div class="code-viewer-actions">
+                                    <button type="button" class="btn-code-copy" id="btnCopyCodeText" title="Copy entire text content">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                        <span id="btnCopyCodeTextLabel">Copy Content</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="code-viewer-content">
+                                <div class="code-editor-table">${rowsHtml}</div>
+                            </div>
+                        `;
+
+                        container.appendChild(viewerBox);
+
+                        const copyContentBtn = viewerBox.querySelector('#btnCopyCodeText');
+                        const copyLabel = viewerBox.querySelector('#btnCopyCodeTextLabel');
+                        if (copyContentBtn) {
+                            copyContentBtn.addEventListener('click', () => {
+                                copyToClipboard(rawText, 'File content copied to clipboard!');
+                                if (copyLabel) {
+                                    const orig = copyLabel.textContent;
+                                    copyLabel.textContent = 'Copied!';
+                                    setTimeout(() => { copyLabel.textContent = orig; }, 2000);
+                                }
+                            });
+                        }
                     } else {
-                        container.innerHTML = `<div class="text-dim">${res.error || 'Preview unavailable'}</div>`;
+                        container.innerHTML = `<div class="preview-fallback-box"><div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div><p class="text-dim">${escapeHtml(res.error || 'Preview unavailable')}</p></div>`;
                     }
                 })
                 .catch(() => {
                     loader.style.display = 'none';
-                    container.innerHTML = '<div class="text-dim">Failed to load code preview.</div>';
+                    container.innerHTML = '<div class="preview-fallback-box"><div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div><p class="text-dim">Failed to load code/text preview.</p></div>';
                 });
         } else {
             loader.style.display = 'none';
             container.innerHTML = `
-                <div style="text-align:center; padding: 2rem;">
+                <div class="preview-fallback-box">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
-                    <h4>No live preview available for this file type</h4>
-                    <p class="text-dim" style="margin-top: 0.5rem; font-size: 0.85rem;">You can download it to view locally on your device.</p>
-                    <a href="${downloadUrl}" class="btn btn-primary" style="margin-top: 1.25rem;" download>Download File</a>
+                    <h4 style="font-weight:700; color:var(--text-main);">No live preview available for this file type</h4>
+                    <p class="text-dim" style="margin-top: 0.5rem; font-size: 0.85rem; max-width: 400px;">This binary or proprietary file format cannot be rendered directly in the browser. You can download it to view locally on your device.</p>
+                    <a href="${downloadUrl}" class="btn btn-primary" style="margin-top: 1.25rem;" download>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>Download File</span>
+                    </a>
                 </div>
             `;
         }

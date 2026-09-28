@@ -42,7 +42,10 @@
     <footer class="app-footer">
         <div class="container footer-inner">
             <div class="footer-left">
-                <span class="footer-brand">Any<span class="accent">Share</span></span>
+                <span class="footer-brand">
+                    <img src="<?= $baseUrl ?>/assets/img/logo.png" alt="Any Share" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:6px;filter:drop-shadow(0 1px 3px rgba(16,185,129,0.3));">
+                    Any<span class="accent">Share</span>
+                </span>
                 <span class="footer-sep">•</span>
                 <span class="footer-note">Private S3 Browser & Cloud File Sharing</span>
             </div>

@@ -18,6 +18,8 @@ $baseUrl = rtrim(get_config('app', 'base_url', ''), '/');
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/favicon.png">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/icon-192.png">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/style.css">
     <script>
         window.ANY_SHARE = {
@@ -34,11 +36,7 @@ $baseUrl = rtrim(get_config('app', 'base_url', ''), '/');
         <div class="header-inner container">
             <a href="<?= $baseUrl ?>/" class="brand-logo">
                 <div class="logo-icon-wrap">
-                    <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-                        <path d="m14 12-3-3-3 3"/>
-                        <path d="M11 9v8"/>
-                    </svg>
+                    <img src="<?= $baseUrl ?>/assets/img/logo.png" alt="Any Share Logo" class="brand-logo-img">
                 </div>
                 <div class="brand-text">
                     <span class="brand-title">Any<span class="accent">Share</span></span>

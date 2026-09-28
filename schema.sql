@@ -2,13 +2,6 @@
 -- Any Share - Database Schema (MySQL / MariaDB)
 -- Compatible with XAMPP (Localhost) & cPanel MySQL
 -- ====================================================================
-
-CREATE DATABASE IF NOT EXISTS `any_share` 
-DEFAULT CHARACTER SET utf8mb4 
-COLLATE utf8mb4_unicode_ci;
-
-USE `any_share`;
-
 -- --------------------------------------------------------------------
 -- Table: buckets
 -- Stores each secret share/bucket record with 30-minute auto-expiry
@@ -28,8 +21,7 @@ CREATE TABLE IF NOT EXISTS `buckets` (
     UNIQUE KEY `uniq_secret_id` (`secret_id`),
     KEY `idx_created_at` (`created_at`),
     KEY `idx_expires_at` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 -- --------------------------------------------------------------------
 -- Table: files
 -- Stores individual file records belonging to a bucket
@@ -51,4 +43,4 @@ CREATE TABLE IF NOT EXISTS `files` (
     KEY `idx_extension` (`extension`),
     KEY `idx_category` (`category`),
     CONSTRAINT `fk_files_bucket` FOREIGN KEY (`bucket_id`) REFERENCES `buckets` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
