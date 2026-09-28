@@ -1,0 +1,16 @@
+# ====================================================================
+# Any Share - Uploads Security Configuration
+# Disables directory indexing and blocks all direct HTTP access
+# All downloads and previews must pass through Any Share APIs
+# ====================================================================
+
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>

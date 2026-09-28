@@ -30,13 +30,17 @@ class Database {
 
         try {
             if ($autoCreate) {
-                // Connect to MySQL server without dbname first to verify/create database
-                $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";
-                $tempPdo = new PDO($dsnServer, $user, $pass, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-                ]);
-                $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET {$charset} COLLATE {$charset}_unicode_ci");
-                unset($tempPdo);
+                // Connect to MySQL server without dbname first to verify/create database (Localhost/Dev)
+                try {
+                    $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";
+                    $tempPdo = new PDO($dsnServer, $user, $pass, [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                    ]);
+                    $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET {$charset} COLLATE {$charset}_unicode_ci");
+                    unset($tempPdo);
+                } catch (Throwable $e) {
+                    // In cPanel, regular MySQL users cannot CREATE DATABASE. Silently proceed to dbname connection.
+                }
             }
 
             $dsn = "mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}";
