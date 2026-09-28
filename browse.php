@@ -71,12 +71,15 @@ $zipDownloadUrl = "{$baseUrl}/api/download.php?id=" . urlencode($uniqueId) . ($c
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 </button>
             </div>
-            <div style="font-size: 0.825rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div style="font-size: 0.825rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
                 <span>Total: <strong><?= $totalStats['files'] ?></strong> files (<?= $totalStats['size_formatted'] ?>)</span>
                 <?php if (isset($browserData['views_count'])): ?>
                 <span>• 👁️ <strong><?= (int)$browserData['views_count'] ?></strong> views</span>
                 <span>• 📥 <strong><?= (int)$browserData['downloads_count'] ?></strong> downloads</span>
                 <?php endif; ?>
+                <span class="s3-expiry-badge" title="Files will auto-delete 30 minutes after upload">
+                    ⏱️ Expires in: <strong id="bucketCountdown" data-seconds="<?= (int)($browserData['expires_in_seconds'] ?? 1800) ?>">--:--</strong>
+                </span>
             </div>
         </div>
 

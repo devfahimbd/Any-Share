@@ -11,7 +11,7 @@ USE `any_share`;
 
 -- --------------------------------------------------------------------
 -- Table: buckets
--- Stores each secret share/bucket record
+-- Stores each secret share/bucket record with 30-minute auto-expiry
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `buckets` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -24,8 +24,10 @@ CREATE TABLE IF NOT EXISTS `buckets` (
     `downloads_count` INT UNSIGNED DEFAULT 0,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `expires_at` DATETIME DEFAULT NULL,
     UNIQUE KEY `uniq_secret_id` (`secret_id`),
-    KEY `idx_created_at` (`created_at`)
+    KEY `idx_created_at` (`created_at`),
+    KEY `idx_expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------

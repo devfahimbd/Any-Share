@@ -75,8 +75,10 @@ class Database {
             `downloads_count` INT UNSIGNED DEFAULT 0,
             `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            `expires_at` DATETIME DEFAULT NULL,
             UNIQUE KEY `uniq_secret_id` (`secret_id`),
-            KEY `idx_created_at` (`created_at`)
+            KEY `idx_created_at` (`created_at`),
+            KEY `idx_expires_at` (`expires_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
         $filesTable = "CREATE TABLE IF NOT EXISTS `files` (
@@ -100,6 +102,14 @@ class Database {
 
         self::$pdo->exec($bucketsTable);
         self::$pdo->exec($filesTable);
+
+        // Ensure expires_at column exists in existing tables
+        try {
+            $colCheck = self::$pdo->query("SHOW COLUMNS FROM `buckets` LIKE 'expires_at'")->fetch();
+            if (!$colCheck) {
+                self::$pdo->exec("ALTER TABLE `buckets` ADD COLUMN `expires_at` DATETIME NULL AFTER `updated_at`, ADD INDEX `idx_expires_at` (`expires_at`)");
+            }
+        } catch (Exception $e) {}
     }
 }
 
@@ -138,29 +148,63 @@ function db_find_bucket(string $secretId): ?array {
 }
 
 /**
- * Creates or updates bucket record in MySQL
+ * Creates or updates bucket record in MySQL with 30-minute auto-expiry
  *
  * @param string $secretId
  * @param int $totalFiles
  * @param int $totalSize
  * @param string $note
+ * @param int $expiryMinutes
  * @return int|null Bucket ID
  */
-function db_create_or_update_bucket(string $secretId, int $totalFiles, int $totalSize, string $note = ''): ?int {
+function db_create_or_update_bucket(string $secretId, int $totalFiles, int $totalSize, string $note = '', ?int $expiryMinutes = null): ?int {
     $db = get_db();
     if (!$db) return null;
 
+    if ($expiryMinutes === null) {
+        $expiryMinutes = (int) get_config('storage', 'auto_delete_minutes', 30);
+    }
+
     $existing = db_find_bucket($secretId);
     if ($existing) {
-        $stmt = $db->prepare("UPDATE `buckets` SET `total_files` = ?, `total_size` = ?, `note` = COALESCE(NULLIF(?, ''), `note`) WHERE `id` = ?");
-        $stmt->execute([$totalFiles, $totalSize, $note, $existing['id']]);
+        $stmt = $db->prepare("UPDATE `buckets` SET `total_files` = ?, `total_size` = ?, `note` = COALESCE(NULLIF(?, ''), `note`), `expires_at` = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE `id` = ?");
+        $stmt->execute([$totalFiles, $totalSize, $note, $expiryMinutes, $existing['id']]);
         return (int) $existing['id'];
     } else {
-        $stmt = $db->prepare("INSERT INTO `buckets` (`secret_id`, `total_files`, `total_size`, `note`) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$secretId, $totalFiles, $totalSize, $note]);
+        $stmt = $db->prepare("INSERT INTO `buckets` (`secret_id`, `total_files`, `total_size`, `note`, `expires_at`) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))");
+        $stmt->execute([$secretId, $totalFiles, $totalSize, $note, $expiryMinutes]);
         return (int) $db->lastInsertId();
     }
 }
+
+/**
+ * Purge expired buckets from database
+ *
+ * @param int $expiryMinutes
+ * @return array Array of deleted secret IDs
+ */
+function db_purge_expired(int $expiryMinutes = 30): array {
+    $db = get_db();
+    if (!$db) return [];
+
+    try {
+        $stmt = $db->prepare("SELECT `secret_id` FROM `buckets` WHERE (`expires_at` IS NOT NULL AND `expires_at` <= NOW()) OR (`created_at` <= DATE_SUB(NOW(), INTERVAL ? MINUTE))");
+        $stmt->execute([$expiryMinutes]);
+        $expiredIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!empty($expiredIds)) {
+            $inClause = implode(',', array_fill(0, count($expiredIds), '?'));
+            $delStmt = $db->prepare("DELETE FROM `buckets` WHERE `secret_id` IN ($inClause)");
+            $delStmt->execute($expiredIds);
+        }
+
+        return $expiredIds;
+    } catch (Exception $e) {
+        error_log("Database purge error: " . $e->getMessage());
+        return [];
+    }
+}
+
 
 /**
  * Saves file record into MySQL files table

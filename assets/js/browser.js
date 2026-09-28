@@ -81,4 +81,30 @@
             }
         });
     });
+
+    // Live Expiry Countdown Timer
+    const countdownEl = document.getElementById('bucketCountdown');
+    if (countdownEl) {
+        let remainingSeconds = parseInt(countdownEl.getAttribute('data-seconds'), 10) || 1800;
+
+        function updateTimer() {
+            if (remainingSeconds <= 0) {
+                countdownEl.textContent = 'Expired';
+                countdownEl.style.color = '#ef4444';
+                if (window.showToast) {
+                    showToast('This share has expired (30m limit).', 'error');
+                }
+                clearInterval(timerInterval);
+                return;
+            }
+
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            countdownEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            remainingSeconds--;
+        }
+
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+    }
 })();

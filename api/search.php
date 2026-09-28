@@ -43,6 +43,8 @@ json_response([
     'stats' => $stats,
     'views_count' => $items['views_count'] ?? 0,
     'downloads_count' => $items['downloads_count'] ?? 0,
+    'expires_at' => $items['expires_at'] ?? null,
+    'expires_in_seconds' => $items['expires_in_seconds'] ?? 0,
     'folder_count' => $items['folder_count'] ?? 0,
     'file_count' => $items['file_count'] ?? 0,
     'total_size_formatted' => $stats['size_formatted'] ?? '0 B',

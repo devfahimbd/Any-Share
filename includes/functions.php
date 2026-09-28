@@ -50,6 +50,120 @@ function get_storage_root() {
 }
 
 /**
+ * Recursively deletes a directory and all its files/subfolders
+ *
+ * @param string $dir
+ * @return bool
+ */
+function delete_directory_recursive($dir) {
+    if (!is_dir($dir)) return false;
+    $files = array_diff(scandir($dir), ['.', '..']);
+    foreach ($files as $file) {
+        $path = $dir . DIRECTORY_SEPARATOR . $file;
+        if (is_dir($path)) {
+            delete_directory_recursive($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    return @rmdir($dir);
+}
+
+/**
+ * Checks if a bucket has expired (older than 30 minutes)
+ *
+ * @param string $id
+ * @return bool
+ */
+function is_bucket_expired($id) {
+    $cleanId = validate_unique_id($id);
+    if (!$cleanId) return true;
+
+    $expiryMinutes = (int) get_config('storage', 'auto_delete_minutes', 30);
+    $expirySeconds = $expiryMinutes * 60;
+    $now = time();
+
+    // Check database record first
+    $dbBucket = db_find_bucket($cleanId);
+    if ($dbBucket) {
+        if (!empty($dbBucket['expires_at'])) {
+            return strtotime($dbBucket['expires_at']) <= $now;
+        }
+        if (!empty($dbBucket['created_at'])) {
+            return (strtotime($dbBucket['created_at']) + $expirySeconds) <= $now;
+        }
+    }
+
+    // Check disk meta.json or folder timestamp
+    $baseDir = get_storage_root() . DIRECTORY_SEPARATOR . $cleanId;
+    if (is_dir($baseDir)) {
+        $metaFile = $baseDir . DIRECTORY_SEPARATOR . 'meta.json';
+        if (file_exists($metaFile)) {
+            $meta = json_decode(@file_get_contents($metaFile), true);
+            $createdAt = (int) ($meta['created_at'] ?? 0);
+            if ($createdAt > 0 && ($now - $createdAt) >= $expirySeconds) {
+                return true;
+            }
+        } else {
+            if (($now - filemtime($baseDir)) >= $expirySeconds) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Automatically purges buckets and files older than 30 minutes
+ */
+function purge_expired_storage() {
+    $expiryMinutes = (int) get_config('storage', 'auto_delete_minutes', 30);
+    $storageRoot = get_storage_root();
+    $now = time();
+
+    // 1. Purge from MySQL database if connected
+    $purgedDbIds = db_purge_expired($expiryMinutes);
+    foreach ($purgedDbIds as $pId) {
+        $pDir = $storageRoot . DIRECTORY_SEPARATOR . $pId;
+        if (is_dir($pDir)) {
+            delete_directory_recursive($pDir);
+        }
+    }
+
+    // 2. Sweep disk for any unrecorded or orphaned expired folders
+    if (is_dir($storageRoot)) {
+        $entries = @scandir($storageRoot);
+        if ($entries) {
+            foreach ($entries as $entry) {
+                if ($entry === '.' || $entry === '..' || $entry === '.gitkeep') continue;
+                $entryPath = $storageRoot . DIRECTORY_SEPARATOR . $entry;
+                if (is_dir($entryPath)) {
+                    $metaFile = $entryPath . DIRECTORY_SEPARATOR . 'meta.json';
+                    $createdTime = 0;
+                    if (file_exists($metaFile)) {
+                        $meta = json_decode(@file_get_contents($metaFile), true);
+                        $createdTime = (int) ($meta['created_at'] ?? 0);
+                    }
+                    if ($createdTime === 0) {
+                        $createdTime = filemtime($entryPath);
+                    }
+                    if (($now - $createdTime) >= ($expiryMinutes * 60)) {
+                        delete_directory_recursive($entryPath);
+                        $db = get_db();
+                        if ($db) {
+                            $del = $db->prepare("DELETE FROM `buckets` WHERE `secret_id` = ?");
+                            $del->execute([$entry]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Resolves and verifies base directory for a unique ID
  *
  * @param string $id
@@ -62,16 +176,33 @@ function get_id_directory($id, $autoCreate = false) {
         return false;
     }
 
+    // Auto-run purge (lightweight)
+    static $purgeRun = false;
+    if (!$purgeRun) {
+        purge_expired_storage();
+        $purgeRun = true;
+    }
+
     $base = get_storage_root();
     $target = $base . DIRECTORY_SEPARATOR . $cleanId;
 
-    if (!is_dir($target)) {
-        if ($autoCreate) {
+    if (!$autoCreate) {
+        if (!is_dir($target) || is_bucket_expired($cleanId)) {
+            if (is_dir($target)) {
+                delete_directory_recursive($target);
+            }
+            $db = get_db();
+            if ($db) {
+                $del = $db->prepare("DELETE FROM `buckets` WHERE `secret_id` = ?");
+                $del->execute([$cleanId]);
+            }
+            return false;
+        }
+    } else {
+        if (!is_dir($target)) {
             if (!@mkdir($target, 0755, true)) {
                 return false;
             }
-        } else {
-            return false;
         }
     }
 
@@ -357,6 +488,24 @@ function get_browser_items($id, $subPath = '') {
         }
     }
 
+    // Calculate expiration countdown
+    $expiryMinutes = (int) get_config('storage', 'auto_delete_minutes', 30);
+    $expirySeconds = $expiryMinutes * 60;
+    $now = time();
+
+    $expiresAtTimestamp = 0;
+    if (!empty($dbBucket['expires_at'])) {
+        $expiresAtTimestamp = strtotime($dbBucket['expires_at']);
+    } elseif (!empty($dbBucket['created_at'])) {
+        $expiresAtTimestamp = strtotime($dbBucket['created_at']) + $expirySeconds;
+    } elseif (!empty($meta['created_at'])) {
+        $expiresAtTimestamp = (int) $meta['created_at'] + $expirySeconds;
+    } else {
+        $expiresAtTimestamp = filemtime($baseDir) + $expirySeconds;
+    }
+
+    $expiresInSeconds = max(0, $expiresAtTimestamp - $now);
+
     return [
         'success' => true,
         'id' => $id,
@@ -370,6 +519,9 @@ function get_browser_items($id, $subPath = '') {
         'total_size_formatted' => format_bytes($totalBytes),
         'views_count' => $meta['views_count'] ?? 0,
         'downloads_count' => $meta['downloads_count'] ?? 0,
+        'expires_at' => date('Y-m-d H:i:s', $expiresAtTimestamp),
+        'expires_in_seconds' => $expiresInSeconds,
+        'expiry_minutes' => $expiryMinutes,
         'meta' => $meta
     ];
 }

@@ -1,24 +1,27 @@
 # Any-Share 🚀
-> **Private, Instant & Anonymous S3-Style Cloud File Sharing & Directory Explorer**
+> **Instant, Anonymous & Temporary Cloud File & Text Sharing with S3-Style Explorer**
 
-Any Share is a lightweight, zero-dependency, self-hosted cloud file-sharing platform written in pure PHP with **MySQL database support**. It allows users to upload files, full directory trees, or ZIP archives without requiring any user registration or login. Each upload is mapped to a private **Unique Secret ID (Access Key)**. 
+Any Share is a lightweight, zero-dependency, self-hosted file and text sharing platform written in pure PHP with **MySQL database support**. It features a modern **White & Emerald Green** aesthetic and allows anyone to upload files, full directory trees, or text snippets without any login or account. Each upload is mapped to a private **Unique Secret ID (Access Key)**.
 
-Uploads are **strictly unindexed**, meaning files cannot be discovered or listed publicly. Anyone with the valid Secret Key can search and explore the files through a rich **S3-style file browser** interface with live inline previews, download counters, view analytics, and on-the-fly ZIP downloads.
+All uploads are **strictly unindexed** and **automatically self-destruct 30 minutes after upload** from both the server disk and the MySQL database. Anyone with the valid Secret Key can search, explore through an **S3-style browser**, view live countdown timers, preview media/documents/code, and download individual files or dynamic ZIP archives.
 
 ---
 
 ## 🌟 Key Features
 
+- **⏱️ 30-Minute Auto-Expiry & Deletion**: Every upload automatically purges 30 minutes after creation from disk storage and MySQL. Includes live countdown timer in the browser!
+- **🎨 Clean White & Emerald Green Theme**: Beautiful, minimal, high-contrast, distraction-free modern interface.
 - **🔒 Zero Login & 100% Anonymous**: No accounts, passwords, or cookies required.
 - **🛡️ Private & Unindexed Storage**: Buckets are hidden from public indexing; accessible only via their specific Secret ID.
-- **🗄️ MySQL Database Integration**: Seamless synchronization of buckets, file metadata, views counter, and download metrics.
+- **📁 Unified File & Folder Uploads**: Drag and drop any file, folder (preserving directory trees via `webkitdirectory`), or ZIP archive.
+- **📝 Direct Text & Note Upload**: Quick in-browser text and code editor to share notes, snippets, or logs under a Secret ID.
+- **🗄️ MySQL Database Integration**: Synchronizes buckets, file metadata, views counter, and download metrics.
 - **🔄 Auto-Database Provisioning**: Automatically creates database `any_share` and required tables in local XAMPP with zero manual configuration.
 - **🌐 cPanel Ready**: Includes `schema.sql` for 1-click phpMyAdmin import on cPanel or production servers.
-- **📁 Full Folder & Directory Tree Uploads**: Preserve nested directories and subfolders using modern browser folder uploading (`webkitdirectory`).
-- **📦 ZIP Archive Support**: Upload `.zip` archives with automatic extraction into browsable S3 folders.
 - **⚡ S3-Style Cloud Browser**:
   - Interactive breadcrumb directory navigation.
   - Switchable **Table View** and **Grid View**.
+  - Live 30-minute countdown badge (`⏱️ Expires in: mm:ss`).
   - Folder and file type indicators (images, video, audio, code, documents, archives).
   - Download counters per file and total bucket view/download analytics.
 - **👁️ Universal In-Browser Previews**:
@@ -27,7 +30,7 @@ Uploads are **strictly unindexed**, meaning files cannot be discovered or listed
   - **Documents**: PDF viewer directly in-modal.
   - **Code & Text**: Formatted text/code viewer with copy button.
 - **📥 Dynamic ZIP Exporter**: Download individual files or download entire folders/buckets as dynamic ZIP archives on the fly.
-- **⚙️ Configurable via `.ini`**: Easily configure database connection, storage limits, security patterns, and UI settings in `config.ini`.
+- **⚙️ Configurable via `.ini`**: Easily configure database connection, storage limits (512 MB default), auto-deletion minutes (30 mins), and UI settings in `config.ini`.
 - **🚀 Zero External Dependencies**: Native PHP 8+, Vanilla CSS, and Vanilla JavaScript. Runs directly inside `htdocs` in XAMPP, WAMP, or cPanel.
 
 ---
@@ -38,27 +41,28 @@ Uploads are **strictly unindexed**, meaning files cannot be discovered or listed
 Any-Share/
 ├── api/
 │   ├── download.php        # Streams single files or generates dynamic ZIP archives
-│   ├── search.php          # Validates Secret IDs and fetches bucket stats
-│   ├── upload.php          # Handles multi-file, folder tree, and ZIP uploads
+│   ├── search.php          # Validates Secret IDs, checks expiry, and fetches bucket stats
+│   ├── upload.php          # Handles file, folder, zip, and text uploads with 30m expiry
 │   └── view.php            # Streams media, PDFs, and code for in-browser preview
 ├── assets/
 │   ├── css/
-│   │   └── style.css       # Modern dark-mode glassmorphism stylesheet
+│   │   └── style.css       # Clean White & Emerald Green stylesheet
 │   └── js/
 │       ├── app.js          # Global notifications, search handler & preview modal
-│       ├── browser.js      # S3 Explorer interactions & view mode switcher
-│       └── uploader.js     # Drag-and-drop & webkitdirectory folder uploader
+│       ├── browser.js      # S3 Explorer interactions, view toggle & live countdown timer
+│       └── uploader.js     # Unified file/folder drag-and-drop & text upload engine
 ├── includes/
 │   ├── config.php          # Parses config.ini and initializes environment
 │   ├── db.php              # MySQL PDO database connection & auto-schema provisioning
 │   ├── footer.php          # Global preview modal, toasts, and scripts
-│   ├── functions.php       # Directory scanner, security sanitizer, MIME & ZIP engine
-│   └── header.php          # Common HTML header, branding, and navigation
+│   ├── functions.php       # Directory scanner, security sanitizer, MIME, ZIP & 30m purge engine
+│   └── header.php          # Minimal header with logo, 30m badge, and MySQL status
 ├── uploads/                # Root storage directory for uploaded buckets
 │   └── .gitkeep            # Preserves directory presence
-├── browse.php              # S3-style directory explorer & file viewer page
+├── browse.php              # S3-style directory explorer & file viewer with countdown
+├── cleanup.php             # 30-minute auto-deletion cron worker (CLI & HTTP)
 ├── config.ini              # Global application configuration file (with DB settings)
-├── index.php               # Homepage with Secret Key search bar & Upload Center
+├── index.php               # Homepage with Secret Key search bar & Unified Upload Center
 ├── LICENSE                 # MIT License
 ├── README.md               # Project documentation & structure tree
 └── schema.sql              # MySQL database schema for XAMPP & cPanel phpMyAdmin
@@ -73,8 +77,8 @@ All database and runtime options are managed in `config.ini`:
 ```ini
 [app]
 app_name = "Any Share"
-app_version = "1.0.0"
-app_description = "Private, Instant & Anonymous S3-Style Cloud File Sharing"
+app_version = "1.1.0"
+app_description = "Instant, Anonymous & Temporary Cloud File & Text Sharing"
 base_url = "" ; Leave empty for auto-detection (e.g. http://localhost/Any%20Share)
 
 [database]
@@ -90,8 +94,9 @@ auto_create_db = true ; Automatically create database & tables if missing on loc
 
 [storage]
 upload_dir = "uploads"
-max_file_size_mb = 1024 ; Maximum upload size in MB
-allow_zip_extraction = true ; Extract uploaded ZIP files into folder trees
+max_file_size_mb = 512 ; Maximum upload size (512 MB as requested)
+auto_delete_minutes = 30 ; Auto delete all files and database records after 30 minutes
+allow_zip_extraction = true ; Auto-extract ZIP files if requested during upload
 preserve_directory_structure = true ; Preserve folder trees on folder uploads
 
 [security]
@@ -101,7 +106,7 @@ allowed_id_pattern = "^[a-zA-Z0-9_\-\.]+$" ; Alphanumeric, dash, underscore, dot
 allow_public_indexing = false ; Keep secret IDs private and unindexed
 
 [ui]
-theme = "dark"
+theme = "emerald-light" ; Clean White + Emerald Green theme
 items_per_page = 50
 enable_code_syntax_highlight = true
 ```
@@ -120,7 +125,23 @@ enable_code_syntax_highlight = true
    ```text
    http://localhost/Any%20Share/
    ```
-4. **Auto-Creation**: The system will automatically connect to MySQL, create the `any_share` database, and initialize the `buckets` and `files` tables automatically! Look for the green `🟢 MySQL` indicator in the header.
+4. **Auto-Creation**: The system will automatically connect to MySQL, create the `any_share` database, and initialize the `buckets` and `files` tables with the `expires_at` column. Look for the green `🟢 MySQL` indicator in the header.
+
+---
+
+## ⏱️ 30-Minute Auto-Deletion & Cron Setup
+
+Files and database records are automatically pruned:
+1. **Automatic on Request**: Every time a user visits, searches, uploads, or browses, the system sweeps for any uploads older than 30 minutes and deletes them from both disk and MySQL.
+2. **Scheduled Cron (Recommended for cPanel)**:
+   In your cPanel **Cron Jobs** section, add a cron job to run every 5 minutes:
+   ```bash
+   */5 * * * * php /home/username/public_html/cleanup.php >/dev/null 2>&1
+   ```
+   Or trigger it via curl:
+   ```bash
+   */5 * * * * curl -s https://yourdomain.com/cleanup.php >/dev/null 2>&1
+   ```
 
 ---
 
@@ -151,16 +172,18 @@ When you are ready to upload this to your cPanel hosting:
 
 ## 🛠️ How to Use
 
-1. **Upload Files or Folders**:
+1. **Upload Files or Text**:
    - Go to the homepage.
    - Enter your preferred **Secret Key (ID)** or click **🎲 Random Key**.
-   - Choose **Individual Files**, **Entire Folder Tree**, or **ZIP Archive**.
-   - Drag & drop or select your items and click **Upload Now to Storage**.
+   - Choose **Upload Files / Folders** or **Write / Paste Text**.
+   - Click **Upload Files** or **Save & Upload Text**.
 2. **Access & Search Files**:
-   - On the homepage search bar, enter your **Secret Key** and click **Browse Files**.
+   - On the homepage search bar, enter your **Secret Key** and click **Browse**.
    - Your S3-style file explorer will load instantly.
-3. **Explore, Preview & Download**:
-   - Click any folder to navigate inside with breadcrumb navigation.
+3. **Live Countdown & Expiry**:
+   - Watch the live timer countdown. Once 30 minutes lapse from upload, the files are permanently purged.
+4. **Explore, Preview & Download**:
+   - Click any folder to navigate inside with breadcrumbs.
    - Click files to open the **Live Preview Modal** (supports images, audio, video, PDF, and code).
    - Click **Download as ZIP** to download the entire bucket or folder as a single archive.
 
