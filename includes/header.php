@@ -36,7 +36,7 @@ $baseUrl = rtrim(get_config('app', 'base_url', ''), '/');
         <div class="header-inner container">
             <a href="<?= $baseUrl ?>/" class="brand-logo">
                 <div class="logo-icon-wrap">
-                    <img src="<?= $baseUrl ?>/assets/img/logo.png" alt="Any Share Logo" class="brand-logo-img">
+                    <img src="<?= $baseUrl ?>/assets/img/logo.png" alt="Any Share Logo" class="brand-logo-img" width="36" height="36">
                 </div>
                 <div class="brand-text">
                     <span class="brand-title">Any<span class="accent">Share</span></span>
