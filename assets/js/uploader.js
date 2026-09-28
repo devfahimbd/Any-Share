@@ -13,7 +13,6 @@
     const fileInput = document.getElementById('fileInput');
     const folderInput = document.getElementById('folderInput');
     const secretIdInput = document.getElementById('secretIdInput');
-    const generateIdBtn = document.getElementById('generateIdBtn');
     
     // Tabs
     const tabFilesBtn = document.getElementById('tabFilesBtn');
@@ -42,24 +41,6 @@
     const successKeyText = document.getElementById('successKeyText');
     const copySuccessKeyBtn = document.getElementById('copySuccessKeyBtn');
     const openExplorerBtn = document.getElementById('openExplorerBtn');
-
-    // Generate random secret key: e.g. as_k8m2p9
-    function generateRandomSecretId() {
-        const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
-        let res = 'as_';
-        for (let i = 0; i < 6; i++) {
-            res += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return res;
-    }
-
-    if (generateIdBtn && secretIdInput) {
-        generateIdBtn.addEventListener('click', () => {
-            secretIdInput.value = generateRandomSecretId();
-            secretIdInput.focus();
-            showToast('Random Secret ID generated!', 'info');
-        });
-    }
 
     // Tab Switching (Files vs Text)
     if (tabFilesBtn && tabTextBtn) {

@@ -35,27 +35,23 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Secret Key Input -->
             <div class="secret-id-bar">
                 <label for="secretIdInput" class="secret-id-label">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="m21 2-2 2m-6 6 2-2m-8 8 2-2m-4 4 2-2"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
-                    <span>Secret Key:</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="m21 2-2 2m-6 6 2-2m-8 8 2-2m-4 4 2-2"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                    <span>Secret Key</span>
                 </label>
                 <div class="secret-id-field-wrap">
-                    <input type="text" id="secretIdInput" name="unique_id" class="input-styled" placeholder="Enter custom secret key or generate..." required pattern="^[a-zA-Z0-9_\-\.]{3,64}$" title="3-64 characters">
-                    <button type="button" id="generateIdBtn" class="btn-sm-random" title="Generate random key">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="15" r="1.5"/></svg>
-                        <span>🎲 Random Key</span>
-                    </button>
+                    <input type="text" id="secretIdInput" name="unique_id" class="input-styled" placeholder="Enter your secret key (e.g. project2026, myfiles)..." required pattern="^[a-zA-Z0-9_\-\.]{3,64}$" title="3-64 characters (letters, numbers, dash, underscore, dot)">
                 </div>
             </div>
 
             <!-- Two Clean Tabs: 1. File Upload, 2. Text Upload -->
             <div class="upload-tabs">
                 <button type="button" class="upload-tab active" id="tabFilesBtn" data-tab="files">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
-                    <span>Upload Files / Folders</span>
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                    <span>Upload Files</span>
                 </button>
                 <button type="button" class="upload-tab" id="tabTextBtn" data-tab="text">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                    <span>Write / Paste Text</span>
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Write Note</span>
                 </button>
             </div>
 
