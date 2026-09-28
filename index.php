@@ -24,11 +24,8 @@ require_once __DIR__ . '/includes/header.php';
         </form>
 
         <div class="search-hints">
-            <div class="recent-ids">
-                <span>Recent:</span>
-                <div id="recentKeysList" class="recent-ids"></div>
-            </div>
-            <span>Auto-expires after 30 mins</span>
+            <span>🔒 Enter a private Secret ID to instantly view or download files</span>
+            <span>⏱️ All storage auto-deletes after 30 mins</span>
         </div>
     </section>
 

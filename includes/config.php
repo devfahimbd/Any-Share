@@ -50,6 +50,12 @@ if (file_exists($configFile)) {
     $config = $defaultConfig;
 }
 
+// Set application timezone (defaults to Asia/Dhaka)
+$appTimezone = $config['app']['timezone'] ?? 'Asia/Dhaka';
+if (!empty($appTimezone)) {
+    @date_default_timezone_set($appTimezone);
+}
+
 // Auto-detect Base URL if not specified
 if (empty($config['app']['base_url'])) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);

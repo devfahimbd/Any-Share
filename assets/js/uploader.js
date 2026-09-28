@@ -334,9 +334,6 @@
                     progressStatus.textContent = 'Upload complete! Storage updated.';
                     showToast(res.message || 'Uploaded successfully!', 'success');
 
-                    // Save to recent keys
-                    saveRecentSecretId(secretId);
-
                     // Show success box
                     if (successPanel) {
                         successPanel.style.display = 'block';

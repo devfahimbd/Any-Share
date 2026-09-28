@@ -46,6 +46,12 @@ class Database {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
 
+            // Sync MySQL session timezone with PHP's current timezone offset
+            try {
+                $tzOffset = date('P');
+                self::$pdo->exec("SET time_zone = '{$tzOffset}'");
+            } catch (Throwable $tzEx) {}
+
             if ($autoCreate && !self::$initialized) {
                 self::ensureSchema();
                 self::$initialized = true;
@@ -165,14 +171,17 @@ function db_create_or_update_bucket(string $secretId, int $totalFiles, int $tota
         $expiryMinutes = (int) get_config('storage', 'auto_delete_minutes', 30);
     }
 
+    $now = time();
+    $expiresAtStr = date('Y-m-d H:i:s', $now + ($expiryMinutes * 60));
+
     $existing = db_find_bucket($secretId);
     if ($existing) {
-        $stmt = $db->prepare("UPDATE `buckets` SET `total_files` = ?, `total_size` = ?, `note` = COALESCE(NULLIF(?, ''), `note`), `expires_at` = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE `id` = ?");
-        $stmt->execute([$totalFiles, $totalSize, $note, $expiryMinutes, $existing['id']]);
+        $stmt = $db->prepare("UPDATE `buckets` SET `total_files` = ?, `total_size` = ?, `note` = COALESCE(NULLIF(?, ''), `note`), `expires_at` = ? WHERE `id` = ?");
+        $stmt->execute([$totalFiles, $totalSize, $note, $expiresAtStr, $existing['id']]);
         return (int) $existing['id'];
     } else {
-        $stmt = $db->prepare("INSERT INTO `buckets` (`secret_id`, `total_files`, `total_size`, `note`, `expires_at`) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))");
-        $stmt->execute([$secretId, $totalFiles, $totalSize, $note, $expiryMinutes]);
+        $stmt = $db->prepare("INSERT INTO `buckets` (`secret_id`, `total_files`, `total_size`, `note`, `expires_at`) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$secretId, $totalFiles, $totalSize, $note, $expiresAtStr]);
         return (int) $db->lastInsertId();
     }
 }
@@ -188,8 +197,10 @@ function db_purge_expired(int $expiryMinutes = 30): array {
     if (!$db) return [];
 
     try {
-        $stmt = $db->prepare("SELECT `secret_id` FROM `buckets` WHERE (`expires_at` IS NOT NULL AND `expires_at` <= NOW()) OR (`created_at` <= DATE_SUB(NOW(), INTERVAL ? MINUTE))");
-        $stmt->execute([$expiryMinutes]);
+        $nowStr = date('Y-m-d H:i:s');
+        $cutoffStr = date('Y-m-d H:i:s', time() - ($expiryMinutes * 60));
+        $stmt = $db->prepare("SELECT `secret_id` FROM `buckets` WHERE (`expires_at` IS NOT NULL AND `expires_at` <= ?) OR (`created_at` <= ?)");
+        $stmt->execute([$nowStr, $cutoffStr]);
         $expiredIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         if (!empty($expiredIds)) {

@@ -494,17 +494,18 @@ function get_browser_items($id, $subPath = '') {
     $now = time();
 
     $expiresAtTimestamp = 0;
-    if (!empty($dbBucket['expires_at'])) {
-        $expiresAtTimestamp = strtotime($dbBucket['expires_at']);
+    if (!empty($meta['created_at'])) {
+        $expiresAtTimestamp = (int) $meta['created_at'] + $expirySeconds;
     } elseif (!empty($dbBucket['created_at'])) {
         $expiresAtTimestamp = strtotime($dbBucket['created_at']) + $expirySeconds;
-    } elseif (!empty($meta['created_at'])) {
-        $expiresAtTimestamp = (int) $meta['created_at'] + $expirySeconds;
+    } elseif (!empty($dbBucket['expires_at'])) {
+        $expiresAtTimestamp = strtotime($dbBucket['expires_at']);
     } else {
         $expiresAtTimestamp = filemtime($baseDir) + $expirySeconds;
     }
 
-    $expiresInSeconds = max(0, $expiresAtTimestamp - $now);
+    // Never exceed 30 minutes (expirySeconds), strictly between 0 and 1800
+    $expiresInSeconds = min($expirySeconds, max(0, $expiresAtTimestamp - $now));
 
     return [
         'success' => true,

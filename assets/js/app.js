@@ -57,48 +57,13 @@
         textArea.remove();
     }
 
-    // Recent Secret IDs manager (localStorage)
-    const RECENT_KEY = 'any_share_recent_keys';
-    window.saveRecentSecretId = function (id) {
-        if (!id) return;
-        try {
-            let list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
-            list = list.filter(item => item !== id);
-            list.unshift(id);
-            if (list.length > 5) list = list.slice(0, 5);
-            localStorage.setItem(RECENT_KEY, JSON.stringify(list));
-            renderRecentKeys();
-        } catch (e) {}
-    };
+    // Clear any previously saved recent keys from browser
+    try {
+        localStorage.removeItem('any_share_recent_keys');
+    } catch (e) {}
 
-    window.renderRecentKeys = function () {
-        const container = document.getElementById('recentKeysList');
-        if (!container) return;
-
-        try {
-            const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
-            if (list.length === 0) {
-                container.innerHTML = '<span class="text-dim">No recent searches</span>';
-                return;
-            }
-
-            container.innerHTML = '';
-            list.forEach(id => {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 'recent-chip';
-                chip.textContent = id;
-                chip.addEventListener('click', () => {
-                    const input = document.getElementById('secretSearchInput');
-                    if (input) {
-                        input.value = id;
-                        document.getElementById('secretSearchForm')?.dispatchEvent(new Event('submit'));
-                    }
-                });
-                container.appendChild(chip);
-            });
-        } catch (e) {}
-    };
+    window.saveRecentSecretId = function () {};
+    window.renderRecentKeys = function () {};
 
     // Initialize Search Bar
     function initSearch() {
@@ -124,7 +89,6 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        saveRecentSecretId(id);
                         window.location.href = data.browse_url;
                     } else {
                         showToast(data.error || 'No files found for this Secret ID.', 'error');
@@ -286,6 +250,5 @@
     document.addEventListener('DOMContentLoaded', function () {
         initSearch();
         initModal();
-        renderRecentKeys();
     });
 })();
